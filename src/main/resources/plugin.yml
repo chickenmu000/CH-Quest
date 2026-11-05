@@ -1,0 +1,19 @@
+name: CH-Quest
+main: com.ch.quest.CHQuest
+version: 1.0
+api-version: '1.21'
+description: NPC 퀘스트 시스템 (아이템 가져오기 / 몬스터 처치)
+softdepend: [Citizens]
+commands:
+  퀘스트:
+    description: 퀘스트 관리 GUI / 관리 명령어
+    aliases: [quest, chquest]
+    usage: /퀘스트
+  q:
+    description: 진행중인 퀘스트 확인
+    aliases: [퀘스트정보]
+    usage: /q
+permissions:
+  chquest.admin:
+    description: 퀘스트 관리
+    default: op
