@@ -167,7 +167,7 @@ public class QuestManager {
             int c = progress(p, q, idx);
             st = " &8(" + c + "/" + g.amount + ") " + (c >= g.amount ? "&a완료" : "&c미완료");
         } else {
-            st = " &8(" + g.amount + "개)";
+            st = " &8(" + g.amount + (g.type == Goal.Type.KILL ? "마리)" : "개)");
         }
         if (g.type == Goal.Type.ITEM) {
             return " &c└  &f<" + T.itemName(g.item) + "&f> 아이템 가져오기" + st;
