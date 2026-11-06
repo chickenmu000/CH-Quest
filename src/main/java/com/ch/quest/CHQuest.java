@@ -43,6 +43,7 @@ public class CHQuest extends JavaPlugin {
     @Override
     public void onDisable() {
         if (manager != null) {
+            manager.hideAllKillBars();
             manager.saveQuests();
             manager.dirty();
             manager.savePlayers();

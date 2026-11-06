@@ -205,6 +205,7 @@ public class GuiListener implements Listener {
         UUID u = e.getPlayer().getUniqueId();
         plugin.manager().binding.remove(u);
         plugin.manager().inputs.remove(u);
+        plugin.manager().hideKillBar(u);
         plugin.manager().savePlayers();
     }
 }

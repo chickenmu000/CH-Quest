@@ -1,5 +1,6 @@
 package com.ch.quest;
 
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +40,10 @@ public class QuestManager {
     public final Map<UUID, String> binding = new HashMap<>();
     /** 모루 입력 세션 */
     public final Map<UUID, InputSession> inputs = new HashMap<>();
+
+    /** 처치 진행도 보스바 (UUID -> 보스바 / 숨김 예약) */
+    private final Map<UUID, BossBar> killBars = new HashMap<>();
+    private final Map<UUID, BukkitTask> killBarTasks = new HashMap<>();
 
     public QuestManager(CHQuest plugin) {
         this.plugin = plugin;
@@ -176,6 +182,40 @@ public class QuestManager {
         return " &c└  &f<" + g.mob + "&f> 몬스터 처치하기" + st;
     }
 
+    /** 처치 진행도를 3초간 보스바로 표시 : 퀘스트이름 몬스터이름 10/50마리 처치하기 */
+    private void showKillBar(Player p, Quest q, Goal g, int prog) {
+        UUID u = p.getUniqueId();
+        String mob = g.mob.equals("아무") ? "아무 몬스터" : g.mob;
+        Component text = T.c("&6" + q.name + " &f" + mob + " &e" + prog + "/" + g.amount + "마리 &f처치하기");
+        float ratio = Math.max(0f, Math.min(1f, g.amount <= 0 ? 1f : (float) prog / g.amount));
+        BossBar bar = killBars.get(u);
+        if (bar == null) {
+            bar = BossBar.bossBar(text, ratio, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
+            killBars.put(u, bar);
+        } else {
+            bar.name(text);
+            bar.progress(ratio);
+        }
+        bar.color(prog >= g.amount ? BossBar.Color.GREEN : BossBar.Color.YELLOW);
+        p.showBossBar(bar);
+        BukkitTask old = killBarTasks.remove(u);
+        if (old != null) old.cancel();
+        killBarTasks.put(u, Bukkit.getScheduler().runTaskLater(plugin, () -> hideKillBar(u), 60L));
+    }
+
+    public void hideKillBar(UUID u) {
+        BukkitTask t = killBarTasks.remove(u);
+        if (t != null) t.cancel();
+        BossBar bar = killBars.remove(u);
+        if (bar == null) return;
+        Player p = Bukkit.getPlayer(u);
+        if (p != null) p.hideBossBar(bar);
+    }
+
+    public void hideAllKillBars() {
+        for (UUID u : new ArrayList<>(killBars.keySet())) hideKillBar(u);
+    }
+
     public static boolean killMatch(String key, LivingEntity victim) {
         if (key.equals("아무")) return true;
         Component cn = victim.customName();
@@ -199,9 +239,8 @@ public class QuestManager {
             if (prog >= g.amount) {
                 msg(killer, g.mob + " 처치하기 &a완료! &7(/q 에서 클리어하세요)");
                 killer.playSound(killer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.4f, 1f);
-            } else {
-                killer.sendActionBar(T.c("&6[Q] &f" + g.mob + " 처치 &e" + prog + "&7/&e" + g.amount));
             }
+            showKillBar(killer, q, g, prog);
         }
     }
 
